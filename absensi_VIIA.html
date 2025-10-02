@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi VIIA</title>
+	<link rel="icon" href="logo.png" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .absent-animation {
+            animation: shake 0.5s ease-in-out;
+        }
+        .present-glow {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body * {
+                visibility: hidden;
+            }
+            #monthlyReport, #monthlyReport * {
+                visibility: visible;
+            }
+            #monthlyReport {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+        .print-only { display: none; }
+        @media print {
+            .print-only { display: block; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
+    <!-- Header -->
+    <header class="bg-white shadow-lg border-b-4 border-blue-500 no-print">
+        <div class="container mx-auto px-6 py-4">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">📚 Absensi Digital Murid Kelas VIIA</h1>
+                <h2 class="text-xl text-blue-600 font-semibold">SMPN 3 Pakis TP. 2025/2026</h2>
+                <p id="currentDate" class="text-gray-500 mt-1"></p>
+                <div class="mt-3 text-gray-600">
+                    <p class="font-medium">Wali Kelas: Dra. Ari Puntorini</p>
+                    <div class="mt-2 text-sm flex justify-center space-x-4">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Total Murid: <span id="totalStudents" class="font-bold">0</span></span>
+                        <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full">Hadir Hari Ini: <span id="presentToday" class="font-bold">0</span></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 py-6">
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-lg shadow-md mb-6 no-print">
+            <div class="flex flex-wrap border-b">
+                <button onclick="showTab('dashboard')" id="tab-dashboard" class="tab-button px-4 sm:px-6 py-3 font-medium text-gray-500 hover:text-blue-600 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z" /><path d="M12 2.252A8.014 8.014 0 0117.748 8H12V2.252z" /></svg>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="showTab('attendance')" id="tab-attendance" class="tab-button px-4 sm:px-6 py-3 font-medium text-gray-500 hover:text-blue-600 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                    <span>Absen Harian</span>
+                </button>
+                <button onclick="showTab('students')" id="tab-students" class="tab-button px-4 sm:px-6 py-3 font-medium text-gray-500 hover:text-blue-600 flex items-center space-x-2">
+                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" /></svg>
+                    <span>Data Murid</span>
+                </button>
+                <button onclick="showTab('monthly')" id="tab-monthly" class="tab-button px-4 sm:px-6 py-3 font-medium text-gray-500 hover:text-blue-600 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" /></svg>
+                    <span>Rekap Bulanan</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard-tab" class="tab-content">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-lg p-4 text-white shadow-lg"><div class="text-2xl font-bold" id="totalPresent">0</div><div class="text-sm opacity-90">Total Hadir</div></div>
+                <div class="bg-gradient-to-r from-blue-400 to-blue-600 rounded-lg p-4 text-white shadow-lg"><div class="text-2xl font-bold" id="totalIjin">0</div><div class="text-sm opacity-90">Total Ijin</div></div>
+                <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg p-4 text-white shadow-lg"><div class="text-2xl font-bold" id="totalSakit">0</div><div class="text-sm opacity-90">Total Sakit</div></div>
+                <div class="bg-gradient-to-r from-red-400 to-red-600 rounded-lg p-4 text-white shadow-lg"><div class="text-2xl font-bold" id="totalAlfa">0</div><div class="text-sm opacity-90">Total Alfa</div></div>
+                <div class="bg-gradient-to-r from-purple-400 to-purple-600 rounded-lg p-4 text-white shadow-lg col-span-2 md:col-span-1"><div class="text-2xl font-bold" id="attendanceRate">0%</div><div class="text-sm opacity-90">Tingkat Kehadiran</div></div>
+            </div>
+             <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Statistik Kehadiran Bulan Ini</h3>
+                <div class="h-80"><canvas id="monthlyChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Attendance Tab -->
+        <div id="attendance-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    <h3 class="text-xl font-semibold text-gray-800">✅ Absen Harian</h3>
+                    <div class="flex items-center flex-wrap justify-center gap-2">
+                        <input type="date" id="attendanceDate" class="border rounded-lg px-3 py-2" />
+                        <button onclick="markAllPresent()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors">Semua Hadir</button>
+                        <button onclick="saveAttendance()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors">Simpan Absen</button>
+                    </div>
+                </div>
+                <div id="attendanceList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Students Tab -->
+        <div id="students-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">👥 Data Murid</h3>
+                    <button onclick="showAddStudentModal()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg mt-3 md:mt-0">Tambah Murid</button>
+                </div>
+                <div id="studentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+        </div>
+
+        <!-- Monthly Report Tab -->
+        <div id="monthly-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800">📅 Rekap Bulanan</h3>
+                    <div class="flex items-center flex-wrap justify-center gap-2 mt-3 md:mt-0">
+                        <select id="monthSelect" class="border rounded-lg px-3 py-2"></select>
+                        <select id="yearSelect" class="border rounded-lg px-3 py-2"></select>
+                        <button onclick="generateMonthlyReport()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg">Generate</button>
+                        <button onclick="printReport()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">Cetak</button>
+						<!-- TOMBOL BARU UNTUK EXPORT CSV -->
+                        <button onclick="exportToCSV()" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg">Export CSV</button>
+                    </div>
+                </div>
+                <div id="monthlyReportContainer">
+                    <p class="text-center text-gray-500">Pilih bulan dan tahun, lalu klik "Generate" untuk melihat rekap.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Student Modal -->
+    <div id="addStudentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4" onclick="event.stopPropagation()">
+            <h3 class="text-lg font-semibold mb-4">Tambah Murid Baru</h3>
+            <form id="addStudentForm">
+                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-2">Nama Lengkap</label><input type="text" id="studentName" class="w-full border rounded-lg px-3 py-2" required></div>
+                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-2">Nomor Absen</label><input type="number" id="studentNumber" class="w-full border rounded-lg px-3 py-2" min="1" step="1" required></div>
+                <div class="mb-4"><label class="block text-sm font-medium text-gray-700 mb-2">Foto Murid (Opsional)</label><input type="file" id="studentPhoto" accept="image/*" class="w-full border rounded-lg px-3 py-2"></div>
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="hideAddStudentModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800 rounded-lg">Batal</button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">Tambah</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // =====================================================================
+        // PENGATURAN KELAS - UBAH DI SINI UNTUK KELAS YANG BERBEDA
+        // =====================================================================
+        const CLASS_ID = 'VIIA'; 
+        // Contoh: Untuk kelas VIIB, ubah menjadi: const CLASS_ID = 'VIIB';
+        // =====================================================================
+
+        // Variabel Global
+        let students = [];
+        let attendanceData = {};
+        let monthlyChart;
+
+        // Inisialisasi Aplikasi saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            loadData();
+            setupDateInputs();
+            if (students.length === 0) {
+                initializeSampleData();
+            }
+            renderAll();
+            showTab('dashboard');
+        }
+
+        function renderAll() {
+            renderStudents();
+            renderAttendanceList();
+            updateDashboard();
+        }
+
+        function setupDateInputs() {
+            const today = new Date();
+            document.getElementById('attendanceDate').value = today.toISOString().split('T')[0];
+            document.getElementById('currentDate').textContent = today.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const monthSelect = document.getElementById('monthSelect');
+            const yearSelect = document.getElementById('yearSelect');
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            monthSelect.innerHTML = monthNames.map((name, index) => `<option value="${index}">${name}</option>`).join('');
+            
+            const currentYear = today.getFullYear();
+            let yearOptions = '';
+            for (let i = currentYear - 2; i <= currentYear + 1; i++) {
+                yearOptions += `<option value="${i}">${i}</option>`;
+            }
+            yearSelect.innerHTML = yearOptions;
+
+            monthSelect.value = today.getMonth();
+            yearSelect.value = currentYear;
+        }
+
+        function initializeSampleData() {
+            const sampleNames = ["AHMAD FAJAR SAPUTRA", "AHMAD KHOIRODIN", "AHMAD SYAIFUDIN", "ALIF SOLIKHIN", "ALIS MULYANI", "ALVIN ANDRIYAN", "ANISA LUTFIYANA", "ARDI KUSMEDI", "ARFIAN DWI ANUGRAH", "Ariyansah", "ARSHINTA WILLY AGGREANY", "ATTA HERU SETIAWAN", "AYUDITA ANGGREINI", "CAHYO DWI WALUYO", "FIFIAN NAVITA SARI", "HILMA NURROFIQ", "HUSNA QURROTA AYUN", "ISTYA NINGSIH", "JONI DIKI PRANATA", "LULUK PUJI LESTARI", "NILA AMILIA NABILA", "PUJI SAFITRI", "RADITYA SHANDI YUDHISTIRA", "Ragil Nayla Mukti", "RENDI", "RENITA", "REZA SAPUTRA", "Rian Adi Nugroho", "RIZAL STIAWAN", "SAHRIL PUJI ASTUTI", "SULIS WIDODO", "WAHYUNI", "Wildan Saputra", "Yunita Septiana"];
+            students = sampleNames.map((name, index) => ({
+                id: Date.now() + index,
+                name: name,
+                number: index + 1,
+                photo: null
+            }));
+            saveData();
+        }
+
+        function loadData() {
+            const savedStudents = localStorage.getItem(`students_${CLASS_ID}`);
+            const savedAttendance = localStorage.getItem(`attendanceData_${CLASS_ID}`);
+            if (savedStudents) students = JSON.parse(savedStudents);
+            if (savedAttendance) attendanceData = JSON.parse(savedAttendance);
+        }
+
+        function saveData() {
+            localStorage.setItem(`students_${CLASS_ID}`, JSON.stringify(students));
+            localStorage.setItem(`attendanceData_${CLASS_ID}`, JSON.stringify(attendanceData));
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600');
+                btn.classList.add('text-gray-500');
+            });
+            document.getElementById(tabName + '-tab').classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-' + tabName);
+            activeBtn.classList.add('text-blue-600', 'border-b-2', 'border-blue-600');
+            activeBtn.classList.remove('text-gray-500');
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            }
+        }
+
+        function showAddStudentModal() {
+            const modal = document.getElementById('addStudentModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.addEventListener('click', hideAddStudentModalOnClickOutside);
+        }
+
+        function hideAddStudentModal() {
+            const modal = document.getElementById('addStudentModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('addStudentForm').reset();
+            modal.removeEventListener('click', hideAddStudentModalOnClickOutside);
+        }
+        
+        function hideAddStudentModalOnClickOutside(event) {
+            if (event.target === event.currentTarget) {
+                hideAddStudentModal();
+            }
+        }
+
+        document.getElementById('addStudentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('studentName').value;
+            const number = parseInt(document.getElementById('studentNumber').value);
+            const photoFile = document.getElementById('studentPhoto').files[0];
+            if (students.some(s => s.number === number)) {
+                alert('Nomor absen sudah digunakan!');
+                return;
+            }
+            const newStudent = { id: Date.now(), name, number, photo: null };
+            if (photoFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newStudent.photo = e.target.result;
+                    addStudentAndRender(newStudent);
+                };
+                reader.readAsDataURL(photoFile);
+            } else {
+                addStudentAndRender(newStudent);
+            }
+        });
+
+        function addStudentAndRender(student) {
+            students.push(student);
+            students.sort((a, b) => a.number - b.number);
+            saveData();
+            renderAll();
+            hideAddStudentModal();
+        }
+
+        function renderStudents() {
+            const container = document.getElementById('studentsList');
+            container.innerHTML = students.map(student => `
+                <div class="bg-gray-50 rounded-lg p-4 border hover:shadow-lg transition-shadow flex items-center space-x-4">
+                    <div class="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">
+                        ${student.photo ? `<img src="${student.photo}" alt="${student.name}" class="w-full h-full object-cover">` : `<span class="text-2xl">${student.number}</span>`}
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-800">${student.name}</h4>
+                        <p class="text-sm text-gray-600">No. Absen: ${student.number}</p>
+                    </div>
+                    <button onclick="deleteStudent(${student.id})" class="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    </button>
+                </div>
+            `).join('');
+            document.getElementById('totalStudents').textContent = students.length;
+        }
+
+        function deleteStudent(id) {
+            if (confirm('Yakin ingin menghapus murid ini?')) {
+                students = students.filter(s => s.id !== id);
+                saveData();
+                renderAll();
+            }
+        }
+
+        function renderAttendanceList() {
+            const container = document.getElementById('attendanceList');
+            const selectedDate = document.getElementById('attendanceDate').value;
+            container.innerHTML = students.map(student => {
+                const status = attendanceData[selectedDate]?.[student.id];
+                let cardClass = 'rounded-lg p-4 border transition-all duration-300 ';
+                switch(status) {
+                    case 'hadir': cardClass += 'bg-green-50 border-green-200 present-glow'; break;
+                    case 'ijin': cardClass += 'bg-blue-50 border-blue-200'; break;
+                    case 'sakit': cardClass += 'bg-yellow-50 border-yellow-200'; break;
+                    case 'alfa': cardClass += 'bg-red-50 border-red-200 absent-animation'; break;
+                    default: cardClass += 'bg-gray-50 border-gray-200';
+                }
+                return `
+                    <div class="${cardClass}" id="student-card-${student.id}">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-sm overflow-hidden flex-shrink-0">
+                                    ${student.photo ? `<img src="${student.photo}" alt="${student.name}" class="w-full h-full object-cover">` : student.number}
+                                </div>
+                                <h4 class="font-medium text-gray-800 text-sm">${student.name}</h4>
+                            </div>
+                            <div class="grid grid-cols-2 gap-1">
+                                <button onclick="markAttendance(${student.id}, 'hadir')" class="px-2 py-1 text-xs rounded ${status === 'hadir' ? 'bg-green-500 text-white' : 'bg-gray-200 hover:bg-green-100'}">Hadir</button>
+                                <button onclick="markAttendance(${student.id}, 'ijin')" class="px-2 py-1 text-xs rounded ${status === 'ijin' ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-blue-100'}">Ijin</button>
+                                <button onclick="markAttendance(${student.id}, 'sakit')" class="px-2 py-1 text-xs rounded ${status === 'sakit' ? 'bg-yellow-500 text-white' : 'bg-gray-200 hover:bg-yellow-100'}">Sakit</button>
+                                <button onclick="markAttendance(${student.id}, 'alfa')" class="px-2 py-1 text-xs rounded ${status === 'alfa' ? 'bg-red-500 text-white' : 'bg-gray-200 hover:bg-red-100'}">Alfa</button>
+                            </div>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        function markAttendance(studentId, status) {
+            const selectedDate = document.getElementById('attendanceDate').value;
+            if (!attendanceData[selectedDate]) attendanceData[selectedDate] = {};
+            attendanceData[selectedDate][studentId] = status;
+            renderAttendanceList();
+            updateDashboard();
+        }
+
+        function markAllPresent() {
+            const selectedDate = document.getElementById('attendanceDate').value;
+            if (!attendanceData[selectedDate]) attendanceData[selectedDate] = {};
+            students.forEach(student => {
+                attendanceData[selectedDate][student.id] = 'hadir';
+            });
+            renderAttendanceList();
+            updateDashboard();
+        }
+
+        function saveAttendance() {
+            saveData();
+            alert('Data absensi berhasil disimpan!');
+        }
+
+        function updateDashboard() {
+            const today = new Date().toISOString().split('T')[0];
+            const currentMonth = new Date().getMonth();
+            const currentYear = new Date().getFullYear();
+            
+            document.getElementById('presentToday').textContent = attendanceData[today] ? Object.values(attendanceData[today]).filter(s => s === 'hadir').length : 0;
+            
+            let stats = { hadir: 0, ijin: 0, sakit: 0, alfa: 0 };
+            Object.keys(attendanceData).forEach(date => {
+                const dateObj = new Date(date);
+                if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
+                    Object.values(attendanceData[date]).forEach(status => {
+                        if (stats.hasOwnProperty(status)) stats[status]++;
+                    });
+                }
+            });
+            
+            document.getElementById('totalPresent').textContent = stats.hadir;
+            document.getElementById('totalIjin').textContent = stats.ijin;
+            document.getElementById('totalSakit').textContent = stats.sakit;
+            document.getElementById('totalAlfa').textContent = stats.alfa;
+            
+            const totalRecords = stats.hadir + stats.ijin + stats.sakit + stats.alfa;
+            const attendanceRate = totalRecords > 0 ? Math.round((stats.hadir / totalRecords) * 100) : 0;
+            document.getElementById('attendanceRate').textContent = attendanceRate + '%';
+
+            updateMonthlyChart(stats);
+        }
+
+        function updateMonthlyChart(stats) {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            if (monthlyChart) {
+                monthlyChart.destroy();
+            }
+            monthlyChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hadir', 'Ijin', 'Sakit', 'Alfa'],
+                    datasets: [{
+                        data: [stats.hadir, stats.ijin, stats.sakit, stats.alfa],
+                        backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' },
+                        title: { display: false }
+                    }
+                }
+            });
+        }
+        
+        function generateMonthlyReport() {
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            
+            const datesInMonth = Object.keys(attendanceData)
+                .filter(date => {
+                    const d = new Date(date);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                })
+                .sort();
+
+            if (datesInMonth.length === 0) {
+                 document.getElementById('monthlyReportContainer').innerHTML = `<p class="text-center text-gray-500">Tidak ada data absensi untuk ${monthNames[month]} ${year}.</p>`;
+                 return;
+            }
+
+            let reportHTML = `
+                <div id="monthlyReport">
+                    <div class="print-only text-center mb-6">
+                        <h1 class="text-2xl font-bold">Rekap Absensi Bulanan</h1>
+                        <h2 class="text-xl">Kelas VIIA - SMPN 3 Pakis</h2>
+                        <p class="text-lg">${monthNames[month]} ${year}</p>
+                        <p class="mt-4">Wali Kelas: Dra. Ari Puntorini</p>
+                        <div class="mt-4 border-b-2 border-black"></div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border-collapse border border-gray-300 text-sm">
+                            <thead>
+                                <tr class="bg-blue-50">
+                                    <th class="border border-gray-300 px-2 py-2 text-left">No</th>
+                                    <th class="border border-gray-300 px-2 py-2 text-left">Nama Murid</th>
+                                    ${datesInMonth.map(date => `<th class="border border-gray-300 px-1 py-2 text-center">${new Date(date).getDate()}</th>`).join('')}
+                                    <th class="border border-gray-300 px-1 py-2 text-center bg-green-100" title="Hadir">H</th>
+                                    <th class="border border-gray-300 px-1 py-2 text-center bg-blue-100" title="Ijin">I</th>
+                                    <th class="border border-gray-300 px-1 py-2 text-center bg-yellow-100" title="Sakit">S</th>
+                                    <th class="border border-gray-300 px-1 py-2 text-center bg-red-100" title="Alfa">A</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${students.map(student => {
+                                    let counts = { hadir: 0, ijin: 0, sakit: 0, alfa: 0 };
+                                    const cells = datesInMonth.map(date => {
+                                        const status = attendanceData[date]?.[student.id];
+                                        if (status && counts.hasOwnProperty(status)) counts[status]++;
+                                        const statusMap = {
+                                            hadir: { char: 'H', color: 'bg-green-100' },
+                                            ijin: { char: 'I', color: 'bg-blue-100' },
+                                            sakit: { char: 'S', color: 'bg-yellow-100' },
+                                            alfa: { char: 'A', color: 'bg-red-100' },
+                                        };
+                                        return `<td class="border border-gray-300 px-1 py-2 text-center ${status ? statusMap[status].color : ''}">${status ? statusMap[status].char : '-'}</td>`;
+                                    }).join('');
+
+                                    return `
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="border border-gray-300 px-2 py-2">${student.number}</td>
+                                            <td class="border border-gray-300 px-2 py-2">${student.name}</td>
+                                            ${cells}
+                                            <td class="border border-gray-300 px-2 py-2 text-center font-semibold">${counts.hadir}</td>
+                                            <td class="border border-gray-300 px-2 py-2 text-center font-semibold">${counts.ijin}</td>
+                                            <td class="border border-gray-300 px-2 py-2 text-center font-semibold">${counts.sakit}</td>
+                                            <td class="border border-gray-300 px-2 py-2 text-center font-semibold">${counts.alfa}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            document.getElementById('monthlyReportContainer').innerHTML = reportHTML;
+        }
+
+        function printReport() {
+            window.print();
+        }
+		// FUNGSI BARU UNTUK EXPORT DATA KE FILE CSV
+        function exportToCSV() {
+            const month = parseInt(document.getElementById('monthSelect').value);
+            const year = parseInt(document.getElementById('yearSelect').value);
+            const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+            const datesInMonth = Object.keys(attendanceData)
+                .filter(date => {
+                    const d = new Date(date);
+                    return d.getMonth() === month && d.getFullYear() === year;
+                })
+                .sort();
+
+            if (datesInMonth.length === 0) {
+                 alert(`Tidak ada data absensi untuk ${monthNames[month]} ${year}.`);
+                 return;
+            }
+
+            // Membuat header untuk CSV
+            const headers = ['No', 'Nama Murid', ...datesInMonth.map(d => new Date(d).getDate()), 'Hadir', 'Ijin', 'Sakit', 'Alfa'];
+            let csvContent = headers.join(',') + '\n';
+
+            // Menambahkan data setiap murid
+            students.forEach(student => {
+                let row = [student.number, `"${student.name.replace(/"/g, '""')}"`]; // Handle nama dengan koma
+                let counts = { hadir: 0, ijin: 0, sakit: 0, alfa: 0 };
+                
+                datesInMonth.forEach(date => {
+                    const status = attendanceData[date]?.[student.id] || '';
+                    if (status && counts.hasOwnProperty(status)) counts[status]++;
+                    row.push(status.charAt(0).toUpperCase()); // H, I, S, A
+                });
+
+                row.push(counts.hadir, counts.ijin, counts.sakit, counts.alfa);
+                csvContent += row.join(',') + '\n';
+            });
+
+            // Membuat file dan men-downloadnya
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            const fileName = `Rekap Absen ${CLASS_ID} - ${monthNames[month]} ${year}.csv`;
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        document.getElementById('attendanceDate').addEventListener('change', renderAttendanceList);
+    </script>
+</body>
+</html>
