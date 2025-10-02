@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurnal Mengajar Harian</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
+        @media print {
+            .no-print { display: none; }
+            body { background: white; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h1 class="text-3xl font-bold text-center text-indigo-800 mb-4">📚 Jurnal Mengajar Harian</h1>
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <label class="font-semibold text-gray-700">Minggu:</label>
+                    <input type="week" id="weekSelector" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="downloadWeeklyReport()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2">
+                        📥 Download Minggu Ini
+                    </button>
+                    <button onclick="clearWeek()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                        🗑️ Hapus Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Input -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">➕ Tambah Entry Jurnal</h2>
+            <form id="journalForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Hari/Tanggal</label>
+                    <input type="date" id="tanggal" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Jam Ke</label>
+                    <div class="flex items-center gap-2">
+                        <select id="jamKeDari" required class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Dari</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                        <span class="text-gray-500 font-medium">sd</span>
+                        <select id="jamKeSampai" required class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Sampai</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kelas</label>
+                    <input type="text" id="kelas" required placeholder="Contoh: X IPA 1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Materi</label>
+                    <input type="text" id="materi" required placeholder="Materi yang diajarkan" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Jumlah Hadir</label>
+                    <input type="number" id="jumlahHadir" required min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Jumlah Tidak Hadir</label>
+                    <input type="number" id="jumlahTidakHadir" required min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Total Siswa</label>
+                    <input type="number" id="totalSiswa" readonly class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-lg">
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Kejadian Khusus</label>
+                    <textarea id="kejadianKhusus" rows="2" placeholder="Kejadian khusus selama pembelajaran (opsional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Tindak Lanjut</label>
+                    <textarea id="tindakLanjut" rows="2" placeholder="Rencana tindak lanjut (opsional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Keterangan</label>
+                    <textarea id="keterangan" rows="2" placeholder="Keterangan tambahan (opsional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                </div>
+                
+                <div class="md:col-span-2 lg:col-span-3 flex justify-end">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+                        ✅ Simpan Entry
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Jurnal Entries -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">📋 Jurnal Minggu Ini</h2>
+            <div id="journalEntries" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">Belum ada entry jurnal untuk minggu ini</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let journalData = JSON.parse(localStorage.getItem('journalData')) || {};
+        
+        // Set default week to current week
+        document.getElementById('weekSelector').value = getCurrentWeek();
+        
+        // Auto calculate total students
+        document.getElementById('jumlahHadir').addEventListener('input', calculateTotal);
+        document.getElementById('jumlahTidakHadir').addEventListener('input', calculateTotal);
+        
+        // Load entries when week changes
+        document.getElementById('weekSelector').addEventListener('change', loadWeekEntries);
+        
+        // Form submission
+        document.getElementById('journalForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            addJournalEntry();
+        });
+        
+        function getCurrentWeek() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const week = getWeekNumber(now);
+            return `${year}-W${week.toString().padStart(2, '0')}`;
+        }
+        
+        function getWeekNumber(date) {
+            const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dayNum = d.getUTCDay() || 7;
+            d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+            const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+            return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        }
+        
+        function calculateTotal() {
+            const hadir = parseInt(document.getElementById('jumlahHadir').value) || 0;
+            const tidakHadir = parseInt(document.getElementById('jumlahTidakHadir').value) || 0;
+            document.getElementById('totalSiswa').value = hadir + tidakHadir;
+        }
+        
+        function addJournalEntry() {
+            const weekKey = document.getElementById('weekSelector').value;
+            const jamDari = document.getElementById('jamKeDari').value;
+            const jamSampai = document.getElementById('jamKeSampai').value;
+            const jamKe = jamDari === jamSampai ? `${jamDari}` : `${jamDari}-${jamSampai}`;
+            
+            const entry = {
+                id: Date.now(),
+                tanggal: document.getElementById('tanggal').value,
+                jamKe: jamKe,
+                kelas: document.getElementById('kelas').value,
+                materi: document.getElementById('materi').value,
+                jumlahHadir: document.getElementById('jumlahHadir').value,
+                jumlahTidakHadir: document.getElementById('jumlahTidakHadir').value,
+                totalSiswa: document.getElementById('totalSiswa').value,
+                kejadianKhusus: document.getElementById('kejadianKhusus').value,
+                tindakLanjut: document.getElementById('tindakLanjut').value,
+                keterangan: document.getElementById('keterangan').value
+            };
+            
+            if (!journalData[weekKey]) {
+                journalData[weekKey] = [];
+            }
+            
+            journalData[weekKey].push(entry);
+            localStorage.setItem('journalData', JSON.stringify(journalData));
+            
+            document.getElementById('journalForm').reset();
+            loadWeekEntries();
+            
+            // Show success message
+            showNotification('Entry berhasil disimpan!', 'success');
+        }
+        
+        function loadWeekEntries() {
+            const weekKey = document.getElementById('weekSelector').value;
+            const entries = journalData[weekKey] || [];
+            const container = document.getElementById('journalEntries');
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Belum ada entry jurnal untuk minggu ini</p>';
+                return;
+            }
+            
+            // Sort entries by date and jam
+            entries.sort((a, b) => {
+                if (a.tanggal !== b.tanggal) {
+                    return new Date(a.tanggal) - new Date(b.tanggal);
+                }
+                const jamA = parseInt(a.jamKe.split('-')[0]);
+                const jamB = parseInt(b.jamKe.split('-')[0]);
+                return jamA - jamB;
+            });
+            
+            container.innerHTML = entries.map(entry => `
+                <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-4">
+                            <span class="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                ${formatDate(entry.tanggal)} - Jam ke-${entry.jamKe}
+                            </span>
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                                ${entry.kelas}
+                            </span>
+                        </div>
+                        <button onclick="deleteEntry('${weekKey}', ${entry.id})" class="text-red-600 hover:text-red-800 text-sm">
+                            🗑️ Hapus
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <strong class="text-gray-700">Materi:</strong>
+                            <p class="text-gray-600 mt-1">${entry.materi}</p>
+                        </div>
+                        
+                        <div>
+                            <strong class="text-gray-700">Kehadiran:</strong>
+                            <p class="text-gray-600 mt-1">
+                                Hadir: ${entry.jumlahHadir} | Tidak Hadir: ${entry.jumlahTidakHadir} | Total: ${entry.totalSiswa}
+                            </p>
+                        </div>
+                        
+                        ${entry.kejadianKhusus ? `
+                        <div>
+                            <strong class="text-gray-700">Kejadian Khusus:</strong>
+                            <p class="text-gray-600 mt-1">${entry.kejadianKhusus}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${entry.tindakLanjut ? `
+                        <div>
+                            <strong class="text-gray-700">Tindak Lanjut:</strong>
+                            <p class="text-gray-600 mt-1">${entry.tindakLanjut}</p>
+                        </div>
+                        ` : ''}
+                        
+                        ${entry.keterangan ? `
+                        <div class="md:col-span-2">
+                            <strong class="text-gray-700">Keterangan:</strong>
+                            <p class="text-gray-600 mt-1">${entry.keterangan}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        function deleteEntry(weekKey, entryId) {
+            if (confirm('Yakin ingin menghapus entry ini?')) {
+                journalData[weekKey] = journalData[weekKey].filter(entry => entry.id !== entryId);
+                localStorage.setItem('journalData', JSON.stringify(journalData));
+                loadWeekEntries();
+                showNotification('Entry berhasil dihapus!', 'success');
+            }
+        }
+        
+        function clearWeek() {
+            const weekKey = document.getElementById('weekSelector').value;
+            if (confirm('Yakin ingin menghapus semua data minggu ini?')) {
+                delete journalData[weekKey];
+                localStorage.setItem('journalData', JSON.stringify(journalData));
+                loadWeekEntries();
+                showNotification('Data minggu ini berhasil dihapus!', 'success');
+            }
+        }
+        
+        function downloadWeeklyReport() {
+            const weekKey = document.getElementById('weekSelector').value;
+            const entries = journalData[weekKey] || [];
+            
+            if (entries.length === 0) {
+                showNotification('Tidak ada data untuk didownload!', 'error');
+                return;
+            }
+            
+            // Sort entries
+            entries.sort((a, b) => {
+                if (a.tanggal !== b.tanggal) {
+                    return new Date(a.tanggal) - new Date(b.tanggal);
+                }
+                const jamA = parseInt(a.jamKe.split('-')[0]);
+                const jamB = parseInt(b.jamKe.split('-')[0]);
+                return jamA - jamB;
+            });
+            
+            let html = `
+                <!DOCTYPE html>
+                <html lang="id">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Jurnal Mengajar Minggu ${weekKey}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+                        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+                        .entry { margin-bottom: 25px; border: 1px solid #ddd; padding: 15px; border-radius: 5px; }
+                        .entry-header { background: #f5f5f5; padding: 10px; margin: -15px -15px 15px -15px; border-radius: 5px 5px 0 0; }
+                        .field { margin-bottom: 10px; }
+                        .field strong { color: #333; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                        th { background-color: #f5f5f5; }
+                        @media print { body { margin: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>JURNAL MENGAJAR HARIAN</h1>
+                        <h2>Minggu: ${weekKey}</h2>
+                        <p>Dicetak pada: ${new Date().toLocaleDateString('id-ID', { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                        })}</p>
+                    </div>
+            `;
+            
+            entries.forEach((entry, index) => {
+                html += `
+                    <div class="entry">
+                        <div class="entry-header">
+                            <strong>Entry ${index + 1} - ${formatDate(entry.tanggal)} | Jam ke-${entry.jamKe} | ${entry.kelas}</strong>
+                        </div>
+                        
+                        <div class="field">
+                            <strong>Materi:</strong> ${entry.materi}
+                        </div>
+                        
+                        <div class="field">
+                            <strong>Kehadiran:</strong> 
+                            Hadir: ${entry.jumlahHadir} siswa | 
+                            Tidak Hadir: ${entry.jumlahTidakHadir} siswa | 
+                            Total: ${entry.totalSiswa} siswa
+                        </div>
+                        
+                        ${entry.kejadianKhusus ? `
+                        <div class="field">
+                            <strong>Kejadian Khusus:</strong> ${entry.kejadianKhusus}
+                        </div>
+                        ` : ''}
+                        
+                        ${entry.tindakLanjut ? `
+                        <div class="field">
+                            <strong>Tindak Lanjut:</strong> ${entry.tindakLanjut}
+                        </div>
+                        ` : ''}
+                        
+                        ${entry.keterangan ? `
+                        <div class="field">
+                            <strong>Keterangan:</strong> ${entry.keterangan}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+            
+            // Add summary table
+            const totalEntries = entries.length;
+            const totalHadir = entries.reduce((sum, entry) => sum + parseInt(entry.jumlahHadir), 0);
+            const totalTidakHadir = entries.reduce((sum, entry) => sum + parseInt(entry.jumlahTidakHadir), 0);
+            
+            html += `
+                <div style="margin-top: 30px; border-top: 2px solid #333; padding-top: 20px;">
+                    <h3>RINGKASAN MINGGU INI</h3>
+                    <table>
+                        <tr>
+                            <th>Total Pertemuan</th>
+                            <td>${totalEntries} pertemuan</td>
+                        </tr>
+                        <tr>
+                            <th>Total Siswa Hadir</th>
+                            <td>${totalHadir} siswa</td>
+                        </tr>
+                        <tr>
+                            <th>Total Siswa Tidak Hadir</th>
+                            <td>${totalTidakHadir} siswa</td>
+                        </tr>
+                        <tr>
+                            <th>Rata-rata Kehadiran</th>
+                            <td>${totalHadir + totalTidakHadir > 0 ? ((totalHadir / (totalHadir + totalTidakHadir)) * 100).toFixed(1) : 0}%</td>
+                        </tr>
+                    </table>
+                </div>
+                </body>
+                </html>
+            `;
+            
+            // Create and download file
+            const blob = new Blob([html], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Jurnal_Mengajar_${weekKey.replace('-', '_')}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification('Jurnal berhasil didownload!', 'success');
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Oct', 'Nov', 'Des'];
+            
+            return `${days[date.getDay()]}, ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+        
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 ${
+                type === 'success' ? 'bg-green-600' : 'bg-red-600'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+        
+        // Load initial entries
+        loadWeekEntries();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98841a4ee3b03e0d',t:'MTc1OTQwNzA5MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+
